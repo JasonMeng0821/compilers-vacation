@@ -265,6 +265,27 @@ let rec gen_stmt s =
             gen_copy (gen_addr v) (gen_addr e) (size_of v.e_type)
           end
 
+      | Assignlist (vlist, elist) ->
+          let rec check_scalar vl =
+            match vl with 
+          | [] -> true
+          | hd::tl -> if scalar hd.e_type || is_pointer hd.e_type then check_scalar tl else false in
+          if check_scalar vlist then 
+            let rec gen_temp el = 
+              match el with
+            | [] -> ()
+            | ehd::etl -> 
+              let t = Regs.new_temp 1 in
+              <SEQ, <DEFTEMP t, gen_expr ehd>, gen_temp etl> in
+            let rec str_temp vl t=
+              match vl with
+            | [] -> ()
+            | vhd::vtl ->
+              let st = if size_of vhd.e_type = 1 then STOREC else STOREW in
+              <SEQ, <st, <TEMP t>, gen_addr v>, str_temp vtl t-1> in 
+            
+            <SEQ, gen_temp elist, str_temp vlist>
+
       | ProcCall (p, args) ->
           gen_call p args
 
