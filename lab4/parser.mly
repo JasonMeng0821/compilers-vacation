@@ -111,6 +111,7 @@ line :
 stmt1 :
     /* empty */                         { Skip }
   | variable ASSIGN expr                { Assign ($1, $3) }
+  | expr_list ASSIGN expr_list          { Assignlist ($1, $3) }
   | name actuals                        { ProcCall ($1, $2) }
   | RETURN expr_opt                     { Return $2 }
   | IF expr THEN stmts elses END        { IfStmt ($2, $4, $5) }

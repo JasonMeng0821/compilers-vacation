@@ -47,6 +47,7 @@ and stmt_guts =
     Skip 
   | Seq of stmt list
   | Assign of expr * expr
+  | Assignlist of expr list * expr list
   | ProcCall of name * expr list 
   | Return of expr option
   | IfStmt of expr * stmt * stmt

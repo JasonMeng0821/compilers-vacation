@@ -307,6 +307,23 @@ let rec check_stmt s env alloc =
         check_var lhs false;
         if not (same_type lt rt) then
           sem_error "type mismatch in assignment" []
+    
+    | Assignlist (lhs, rhs) ->
+        let check_element l r =
+          let lt = check_expr l env
+          and rt = check_expr r env in
+          check_var l false;
+          if not (same_type lt rt) then
+            sem_error "type mismatch in assignment" [] in
+        let rec check_var lh rh =
+          match lh with
+            [] -> ()
+          | lhd::ltl -> 
+              match rh with
+                [] -> ()
+              | rhd::rtl -> check_element lhd rhd; check_var ltl rtl in
+        if List.length lh <> List.length rh then sem_error "different lengths of lhs and rhs" []
+        else check_var lhs rhs
 
     | ProcCall (p, args) ->
         let rt = check_funcall p args env (ref None) in
