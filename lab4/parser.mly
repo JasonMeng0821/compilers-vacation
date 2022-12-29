@@ -111,7 +111,7 @@ line :
 stmt1 :
     /* empty */                         { Skip }
   | variable ASSIGN expr                { Assign ($1, $3) }
-  | expr_list ASSIGN expr_list          { Assignlist ($1, $3) }
+  | var_list ASSIGN expr_list           { Assignlist ($1, $3) }
   | name actuals                        { ProcCall ($1, $2) }
   | RETURN expr_opt                     { Return $2 }
   | IF expr THEN stmts elses END        { IfStmt ($2, $4, $5) }
@@ -185,6 +185,10 @@ variable :
   | variable SUB expr BUS               { makeExpr (Sub ($1, $3)) }
   | variable DOT name                   { makeExpr (Select ($1, $3)) }
   | variable ARROW                      { makeExpr (Deref $1) } ;
+
+var_list :
+    variable COMMA variable             { [$1; $3] }
+  | variable COMMA var_list             { $1 :: $3 } ;
 
 typexpr :       
     name                                { TypeName $1 }

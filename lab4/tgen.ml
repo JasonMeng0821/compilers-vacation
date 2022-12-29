@@ -270,21 +270,27 @@ let rec gen_stmt s =
             match vl with 
           | [] -> true
           | hd::tl -> if scalar hd.e_type || is_pointer hd.e_type then check_scalar tl else false in
+          
+          let templist = [] in
+          let rec gen_temp el tmp= 
+            match el with
+          | [] -> <NOP>
+          | ehd::etl -> 
+            let t = Regs.new_temp 1 in
+            t::tmp; <SEQ, <DEFTEMP t, gen_expr ehd>, gen_temp etl tmp> in
+
+          let rec str_temp vl tmp=
+            match vl with
+          | [] -> <NOP>
+          | vhd::vtl ->
+              match tmp with
+              | [] -> <NOP>
+              |tmphd::tmptl ->
+                let st = if size_of vhd.e_type = 1 then STOREC else STOREW in
+                <SEQ, <st, <TEMP tmphd>, gen_addr vhd>, str_temp vtl tmptl> in  
+
           if check_scalar vlist then 
-            let rec gen_temp el = 
-              match el with
-            | [] -> ()
-            | ehd::etl -> 
-              let t = Regs.new_temp 1 in
-              <SEQ, <DEFTEMP t, gen_expr ehd>, gen_temp etl> in
-            let rec str_temp vl t=
-              match vl with
-            | [] -> ()
-            | vhd::vtl ->
-              let st = if size_of vhd.e_type = 1 then STOREC else STOREW in
-              <SEQ, <st, <TEMP t>, gen_addr v>, str_temp vtl t-1> in 
-            
-            <SEQ, gen_temp elist, str_temp vlist>
+          <SEQ, gen_temp elist templist, str_temp vlist (List.reverse templist)>
 
       | ProcCall (p, args) ->
           gen_call p args

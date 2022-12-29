@@ -137,6 +137,7 @@ and fStmt s =
       Skip -> fStr "(SKIP)"
     | Seq stmts -> fMeta "(SEQ$)" [fTail(fStmt) stmts]
     | Assign (e1, e2) -> fMeta "(ASSIGN $ $)" [fExpr e1; fExpr e2]
+    | Assignlist (e1, e2) -> fMeta "(ASSIGNLIST $$)" [fTail(fExpr) e1; fTail(fExpr) e2]
     | ProcCall (p, aps) -> fMeta "(CALL $$)" [fName p; fTail(fExpr) aps]
     | Return (Some e) -> fMeta "(RETURN $)" [fExpr e]
     | Return None -> fStr "(RETURN)"
