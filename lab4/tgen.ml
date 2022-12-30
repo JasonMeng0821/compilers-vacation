@@ -265,32 +265,51 @@ let rec gen_stmt s =
             gen_copy (gen_addr v) (gen_addr e) (size_of v.e_type)
           end
 
-      | Assignlist (vlist, elist) ->
-          let rec check_scalar vl =
-            match vl with 
-          | [] -> true
-          | hd::tl -> if scalar hd.e_type || is_pointer hd.e_type then check_scalar tl else false in
-          
-          let templist = [] in
-          let rec gen_temp el tmp= 
-            match el with
-          | [] -> <NOP>
-          | ehd::etl -> 
-            let t = Regs.new_temp 1 in
-            t::tmp; <SEQ, <DEFTEMP t, gen_expr ehd>, gen_temp etl tmp> in
-
-          let rec str_temp vl tmp=
-            match vl with
+    | Assignlist (vlist, elist) ->
+        let rec check_scalar vl=
+          match vl with
+        | [] -> true
+        | hd::tl -> 
+          if scalar hd.e_type || is_pointer hd.e_type then 
+            check_scalar tl else false in
+        
+        let templist0 = ref [] in
+        let rec gen_tempaddr vl tmp=
+          match vl with
           | [] -> <NOP>
           | vhd::vtl ->
-              match tmp with
-              | [] -> <NOP>
-              |tmphd::tmptl ->
-                let st = if size_of vhd.e_type = 1 then STOREC else STOREW in
-                <SEQ, <st, <TEMP tmphd>, gen_addr vhd>, str_temp vtl tmptl> in  
+            let t = Regs.new_temp 1 in
+            tmp := t :: !tmp;
+            <SEQ, <DEFTEMP t, gen_addr vhd>, gen_tempaddr vtl tmp> in
 
-          if check_scalar vlist then 
-          <SEQ, gen_temp elist templist, str_temp vlist (List.reverse templist)>
+        let templist1 = ref [] in
+        let rec gen_temp el tmp=
+          match el with
+        | [] -> <NOP>
+        | ehd::etl ->
+          let t = Regs.new_temp 1 in
+          tmp := t :: !tmp;
+          <SEQ, <DEFTEMP t, gen_expr ehd>, gen_temp etl tmp> in
+
+        let rec str_temp vl adrlst tmp=
+          match adrlst with
+        | [] -> <NOP>
+        | adrhd::adrtl ->
+            match tmp with
+            | [] -> <NOP>
+            | tmphd::tmptl ->
+              match vl with
+              | [] -> <NOP>
+              | vhd::vtl ->
+                let st = if size_of vhd.e_type = 1 then STOREC else STOREW in
+                <SEQ, <st, <TEMP tmphd>, <TEMP adrhd>>, str_temp vtl adrtl tmptl> in
+
+        if check_scalar vlist then
+        let code0 = gen_tempaddr vlist templist0 in
+        let code1 = gen_temp elist templist1 in
+        let code2 = str_temp vlist (List.rev !templist0) (List.rev !templist1) in
+        <SEQ, code0, code1, code2>
+        else failwith "vlist contains non-scalar"
 
       | ProcCall (p, args) ->
           gen_call p args
