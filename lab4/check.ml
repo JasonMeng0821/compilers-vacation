@@ -314,7 +314,7 @@ let rec check_stmt s env alloc =
           and rt = check_expr r env in
           check_var l false;
           if not (same_type lt rt) then
-            sem_error "type mismatch in assignment" [] in
+            sem_error "type mismatch in simultaneous assignment" [] in
         let rec check_varlist lh rh =
           match lh with
             [] -> ()
